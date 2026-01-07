@@ -1,0 +1,85 @@
+-- Create the database
+CREATE DATABASE IF NOT EXISTS ecommerce_store;
+USE ecommerce_store;
+
+-- Customers table: Stores customer details
+CREATE TABLE Customers (
+    CustomerID INT AUTO_INCREMENT PRIMARY KEY,
+    FirstName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50) NOT NULL,
+    Email VARCHAR(100) NOT NULL UNIQUE,
+    Phone VARCHAR(20),
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Products table: Stores product details
+CREATE TABLE Products (
+    ProductID INT AUTO_INCREMENT PRIMARY KEY,
+    ProductName VARCHAR(100) NOT NULL,
+    Description TEXT,
+    Price DECIMAL(10, 2) NOT NULL CHECK (Price >= 0),
+    StockQuantity INT NOT NULL DEFAULT 0,
+    CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Categories table: Product categories for classification
+CREATE TABLE Categories (
+    CategoryID INT AUTO_INCREMENT PRIMARY KEY,
+    CategoryName VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- ProductCategories table: Many-to-Many relationship between Products and Categories
+CREATE TABLE ProductCategories (
+    ProductID INT NOT NULL,
+    CategoryID INT NOT NULL,
+    PRIMARY KEY (ProductID, CategoryID),
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID) ON DELETE CASCADE,
+    FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID) ON DELETE CASCADE
+);
+
+-- Orders table: Stores order information for customers
+CREATE TABLE Orders (
+    OrderID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    OrderDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Status ENUM('Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled') NOT NULL DEFAULT 'Pending',
+    TotalAmount DECIMAL(10, 2) NOT NULL CHECK (TotalAmount >= 0),
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE
+);
+
+-- OrderItems table: Stores the products within each order (One-to-Many with Orders, Many-to-One with Products)
+CREATE TABLE OrderItems (
+    OrderItemID INT AUTO_INCREMENT PRIMARY KEY,
+    OrderID INT NOT NULL,
+    ProductID INT NOT NULL,
+    Quantity INT NOT NULL CHECK (Quantity > 0),
+    PriceAtPurchase DECIMAL(10, 2) NOT NULL CHECK (PriceAtPurchase >= 0),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID) ON DELETE CASCADE,
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID) ON DELETE CASCADE
+);
+
+-- Reviews table: Customers can review products (One-to-Many: Customer -> Reviews, Product -> Reviews)
+CREATE TABLE Reviews (
+    ReviewID INT AUTO_INCREMENT PRIMARY KEY,
+    ProductID INT NOT NULL,
+    CustomerID INT NOT NULL,
+    Rating INT NOT NULL CHECK (Rating BETWEEN 1 AND 5),
+    Comment TEXT,
+    ReviewDate DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ProductID) REFERENCES Products(ProductID) ON DELETE CASCADE,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE,
+    UNIQUE (ProductID, CustomerID) -- Each customer can review a product only once
+);
+
+-- Addresses table: Stores multiple shipping addresses for customers (One-to-Many relationship)
+CREATE TABLE Addresses (
+    AddressID INT AUTO_INCREMENT PRIMARY KEY,
+    CustomerID INT NOT NULL,
+    AddressLine1 VARCHAR(255) NOT NULL,
+    AddressLine2 VARCHAR(255),
+    City VARCHAR(100) NOT NULL,
+    State VARCHAR(100),
+    PostalCode VARCHAR(20) NOT NULL,
+    Country VARCHAR(100) NOT NULL,
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID) ON DELETE CASCADE
+);
